@@ -52,7 +52,7 @@ char **argv;
 
     printf("-> status=0x%02x okay=%d nbyte=%u\n", sc.status, sc.okay, sc.nbyte);
     printf("data:");
-    for (i = 0; i < (int)sc.nbyte && i < 64; i++) {
+    for (i = 0; i < (int)sc.nbyte && i < (int)sizeof buf; i++) {
         if (i % 16 == 0) printf("\n  +%02x: ", i);
         printf("%02x ", buf[i]);
     }
