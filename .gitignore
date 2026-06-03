@@ -1,0 +1,15 @@
+# Large disk images — never commit (650 MB each)
+hdf/
+*.hdf
+*.hdf.*
+
+# Scratch: logs, screenshots, pulled Amix binaries, tape extracts, build output
+tmp/
+build/
+
+# OS / editor cruft
+core
+*.core
+*.swp
+*~
+.DS_Store
