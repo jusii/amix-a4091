@@ -77,15 +77,31 @@ def push_dir(f, localdir, remotedir):
             push_file(f, os.path.join(root, name), rdir.rstrip("/") + "/" + name)
 
 
-def pull_file(f, remote, local):
+def remote_size(f, remote):
+    """Remote byte size via SIZE (binary mode), or None if unsupported."""
+    try:
+        return f.size(remote)
+    except (ftplib.error_perm, ftplib.error_reply, OSError):
+        return None
+
+
+def pull_file(f, remote, local, retries=3):
     if os.path.isdir(local) or local.endswith("/"):
         local = os.path.join(local, os.path.basename(remote.rstrip("/")))
     d = os.path.dirname(local)
     if d:
         os.makedirs(d, exist_ok=True)
-    with open(local, "wb") as fh:
-        f.retrbinary("RETR " + remote, fh.write)
-    print("  pull %s -> %s (%d bytes)" % (remote, local, os.path.getsize(local)))
+    want = remote_size(f, remote)
+    for attempt in range(1, retries + 1):
+        with open(local, "wb") as fh:
+            f.retrbinary("RETR " + remote, fh.write)
+        got = os.path.getsize(local)
+        if want is None or got == want:
+            tag = "" if want is None else " ok"
+            print("  pull %s -> %s (%d bytes)%s" % (remote, local, got, tag))
+            return
+        print("  ! short read %s: got %d want %d (retry %d/%d)" % (remote, got, want, attempt, retries))
+    raise IOError("pull of %s kept truncating (got %d, want %d)" % (remote, got, want))
 
 
 def remote_names(f, path):
