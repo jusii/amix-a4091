@@ -186,71 +186,9 @@ a4091init()
 }
 
 /*
- * Issue one SCSI command (the CDB) to target via SCRIPTS; DMA the data into
- * datain_buf.  Returns: 0 done (status in status_buf[0]), -1 select timeout,
- * -2 poll timeout, -3 SCRIPTS error.  *pdsps/*pistat/*pdstat/*psstat0 get the
- * completion register state for diagnostics.
- */
-static int
-a4091cmd( target, cdb, cdblen, datalen, pdsps, pistat, pdstat, psstat0, ppoll)
-int	target, cdblen, datalen;
-uchar	*cdb;
-ulong	*pdsps, *ppoll;
-uchar	*pistat, *pdstat, *psstat0;
-{
-	ulong	poll;
-	uchar	istat, dstat, sstat0;
-	int	i;
-
-	/* buffers */
-	ident_buf[0] = 0x80;				/* IDENTIFY, LUN 0, no disconnect */
-	for (i = 0; i < 12; ++i) cdb_buf[i] = (i < cdblen) ? cdb[i] : 0;
-	for (i = 0; i < datalen && i < sizeof datain_buf; ++i) datain_buf[i] = 0;
-	status_buf[0] = 0xff;
-	for (i = 0; i < sizeof msg_buf; ++i) msg_buf[i] = 0xff;
-
-	/* DSA table (bus addresses == kernel addresses, identity) */
-	ds.scsi_addr = (ulong)0x10000 << target;	/* one-hot select id, async */
-	ds.idlen = 1;        ds.idbuf     = ident_buf;
-	ds.cmdlen = cdblen;  ds.cmdbuf    = cdb_buf;
-	ds.stslen = 1;       ds.stsbuf    = status_buf;
-	ds.msglen = 1;       ds.msgbuf    = &msg_buf[0];
-	ds.msginlen = 1;     ds.msginbuf  = &msg_buf[1];
-	ds.extmsglen = 1;    ds.extmsgbuf = &msg_buf[2];
-	ds.synmsglen = 1;    ds.synmsgbuf = &msg_buf[3];
-	ds.data1len = datalen; ds.data1buf = datain_buf;
-	ds.data2len = 0;     ds.data2buf  = 0;
-
-	/* launch (siop.c:1108-1111) */
-	WR32( R_TEMP, 0);
-	WR8 ( R_SBCL, 0);				/* async */
-	WR32( R_DSA, (ulong)&ds);
-	WR32( R_DSP, (ulong)inq_script);		/* writing DSP starts SCRIPTS */
-
-	/* poll ISTAT for SIP|DIP (siop_poll, siop.c:357) */
-	istat = 0;
-	for (poll = 0; poll < 8000000; ++poll) {
-		istat = RD8(R_ISTAT);
-		if (istat & (ISTAT_SIP | ISTAT_DIP))
-			break;
-	}
-	sstat0 = (istat & ISTAT_SIP) ? RD8(R_SSTAT0) : 0;
-	dstat  = (istat & ISTAT_DIP) ? RD8(R_DSTAT)  : 0;
-	*pdsps = RD32(R_DSPS);
-	*pistat = istat; *pdstat = dstat; *psstat0 = sstat0; *ppoll = poll;
-
-	if (!(istat & (ISTAT_SIP | ISTAT_DIP)))
-		return -2;				/* poll timeout (chip silent) */
-	if (sstat0 & SSTAT0_STO)
-		return -1;				/* select timeout (no target) */
-	if ((dstat & DSTAT_SIR) && *pdsps == 0xff00)
-		return 0;				/* command complete */
-	return -3;					/* SCRIPTS error (dsps=code) */
-}
-
-/*
- * GSIO entry.  Run cp->cdb as a SCSI command to target cp->unit and fill cp->addr
- * with: [0..35] INQUIRY data, then a diagnostics block at [36..].
+ * GSIO entry -- INLINED transaction (no separate a4091cmd 9-param function, to
+ * dodge a native-cc codegen issue: a4091cmd compiled fine + never runs at boot,
+ * yet its presence corrupted the kernel image -> bootstrap Guru).
  */
 bool
 a4091queue( c, cp)
@@ -260,7 +198,7 @@ struct sdcom	*cp;
 	uchar	*out = (uchar *)cp->addr;
 	ulong	dsps, poll, scr;
 	uchar	istat, dstat, sstat0;
-	int	e, i, rc, dlen;
+	int	e, i, rc, target;
 
 	if (e = a4091map()) {
 		cp->status = 0xff; cp->okay = FALSE;
@@ -268,34 +206,70 @@ struct sdcom	*cp;
 		return TRUE;
 	}
 
-	/* write-path self-test: SCRATCH via shadow, read back at +0 */
 	WR32( R_SCRATCH, 0x5aa55aa5);
 	scr = RD32( R_SCRATCH);
-
 	a4091init();
 
-	dlen = cp->nbyte ? cp->nbyte : 36;
-	if (dlen > sizeof datain_buf) dlen = sizeof datain_buf;
-	rc = a4091cmd( (int)cp->unit, cp->cdb, 6, dlen,
-		       &dsps, &istat, &dstat, &sstat0, &poll);
+	target = (int)cp->unit;
 
-	/* [0..35] the data the target sent (INQUIRY response) */
-	for (i = 0; i < 36; ++i)
-		out[i] = datain_buf[i];
-	/* [36..] diagnostics */
-	out[36] = (uchar)rc;			/* 0 done, -1 STO, -2 pollto, -3 err */
-	out[37] = status_buf[0];		/* SCSI status (0=GOOD) */
-	out[38] = istat;
-	out[39] = dstat;
-	out[40] = sstat0;
-	out[41] = (RD8(R_CTEST8) >> 4) & 0xf;	/* chip rev */
-	out[42] = (scr == 0x5aa55aa5) ? 0xab : 0x00;	/* shadow-write OK? */
-	out[43] = RD8(R_SCNTL0);		/* echo a reg we set (0xCC if write OK) */
+	/* buffers */
+	ident_buf[0] = 0x80;
+	for (i = 0; i < 12; ++i) cdb_buf[i] = (i < 6) ? cp->cdb[i] : 0;
+	for (i = 0; i < 36; ++i) datain_buf[i] = 0;
+	status_buf[0] = 0xff;
+	for (i = 0; i < 8; ++i) msg_buf[i] = 0xff;
+
+	/* DSA table */
+	ds.scsi_addr = (ulong)0x10000 << target;
+	ds.idlen = 1;        ds.idbuf     = ident_buf;
+	ds.cmdlen = 6;       ds.cmdbuf    = cdb_buf;
+	ds.stslen = 1;       ds.stsbuf    = status_buf;
+	ds.msglen = 1;       ds.msgbuf    = &msg_buf[0];
+	ds.msginlen = 1;     ds.msginbuf  = &msg_buf[1];
+	ds.extmsglen = 1;    ds.extmsgbuf = &msg_buf[2];
+	ds.synmsglen = 1;    ds.synmsgbuf = &msg_buf[3];
+	ds.data1len = 36;    ds.data1buf  = datain_buf;
+	ds.data2len = 0;     ds.data2buf  = 0;
+
+	/* launch */
+	WR32( R_TEMP, 0);
+	WR8 ( R_SBCL, 0);
+	WR32( R_DSA, (ulong)&ds);
+	WR32( R_DSP, (ulong)inq_script);
+
+	/* poll (cc-safe rewrite: bound in a variable, while-form, explicit ++) */
+	{
+		ulong limit;
+		limit = 8000000;
+		istat = 0;
+		poll = 0;
+		while (poll < limit) {
+			istat = RD8(R_ISTAT);
+			if (istat & (ISTAT_SIP | ISTAT_DIP)) break;
+			poll = poll + 1;
+		}
+	}
+	sstat0 = (istat & ISTAT_SIP) ? RD8(R_SSTAT0) : 0;
+	dstat  = (istat & ISTAT_DIP) ? RD8(R_DSTAT)  : 0;
+	dsps   = RD32(R_DSPS);
+
+	if (!(istat & (ISTAT_SIP | ISTAT_DIP)))      rc = -2;
+	else if (sstat0 & SSTAT0_STO)                rc = -1;
+	else if ((dstat & DSTAT_SIR) && dsps == 0xff00) rc = 0;
+	else                                         rc = -3;
+
+	for (i = 0; i < 36; ++i) out[i] = datain_buf[i];
+	out[36] = (uchar)rc;
+	out[37] = status_buf[0];
+	out[38] = istat; out[39] = dstat; out[40] = sstat0;
+	out[41] = (RD8(R_CTEST8) >> 4) & 0xf;
+	out[42] = (scr == 0x5aa55aa5) ? 0xab : 0x00;
+	out[43] = RD8(R_SCNTL0);
 	out[44] = (uchar)(dsps >> 24); out[45] = (uchar)(dsps >> 16);
 	out[46] = (uchar)(dsps >> 8);  out[47] = (uchar)dsps;
 	out[48] = (uchar)(poll >> 24); out[49] = (uchar)(poll >> 16);
 	out[50] = (uchar)(poll >> 8);  out[51] = (uchar)poll;
-	out[52] = msg_buf[0];			/* command-complete message (0x00) */
+	out[52] = msg_buf[0];
 
 	cp->nbyte = 53;
 	cp->status = (rc == 0) ? status_buf[0] : 0xff;
@@ -304,7 +278,6 @@ struct sdcom	*cp;
 	return TRUE;
 }
 
-/* INT2 ISR placeholder; not wired (we poll). */
 void
 a4091intr()
 {

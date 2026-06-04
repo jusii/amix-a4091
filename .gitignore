@@ -7,6 +7,9 @@ hdf/
 tmp/
 build/
 
+# Upstream A4091 FOSS repo — cloned for reference, re-cloneable, has its own .git
+reference/a4091-software/
+
 # OS / editor cruft
 core
 *.core
