@@ -22,7 +22,7 @@ char **argv;
 {
     int fd, i, n;
     struct sdcom sc;
-    unsigned char buf[256];
+    unsigned char buf[1024];        /* must hold a 512-byte block; <= scsi.c iobuf */
     int card = (argc > 1) ? atoi(argv[1]) : 0;
     int unit = (argc > 2) ? atoi(argv[2]) : 6;
 
@@ -36,7 +36,13 @@ char **argv;
     if (argc > 3) {                 /* explicit CDB bytes given */
         for (i = 3, n = 0; i < argc && n < 12; i++, n++)
             sc.cdb[n] = (uchar)strtol(argv[i], (char **)0, 16);
-        sc.nbyte = 36;              /* assume a small data-in */
+        switch (sc.cdb[0]) {        /* data-in length by opcode */
+        case 0x28: sc.nbyte = (((sc.cdb[7]<<8)|sc.cdb[8]) * 512); break; /* READ(10) */
+        case 0x25: sc.nbyte = 8;          break;   /* READ CAPACITY */
+        case 0x03: sc.nbyte = sc.cdb[4];  break;   /* REQUEST SENSE */
+        default:   sc.nbyte = 36;         break;
+        }
+        if (sc.nbyte == 0 || sc.nbyte > (int)sizeof buf) sc.nbyte = sizeof buf;
     } else {                        /* default: INQUIRY */
         sc.cdb[0] = 0x12;           /* INQUIRY */
         sc.cdb[4] = 36;             /* allocation length */
@@ -64,6 +70,12 @@ char **argv;
         for (i = 0; i < 4; i++)  rev[i] = buf[32 + i]; rev[4] = 0;
         printf("INQUIRY: devtype=0x%02x  vendor=\"%s\"  product=\"%s\"  rev=\"%s\"\n",
                buf[0] & 0x1f, vid, pid, rev);
+    }
+    if (sc.okay && sc.cdb[0] == 0x28) {       /* READ(10): flag an Amiga RDB */
+        printf("first longword = %02x%02x%02x%02x", buf[0], buf[1], buf[2], buf[3]);
+        if (buf[0]=='R' && buf[1]=='D' && buf[2]=='S' && buf[3]=='K')
+            printf("  <- 'RDSK' RigidDiskBlock!");
+        printf("\n");
     }
     return 0;
 }
