@@ -36,8 +36,14 @@ char **argv;
     if (argc > 3) {                 /* explicit CDB bytes given */
         for (i = 3, n = 0; i < argc && n < 12; i++, n++)
             sc.cdb[n] = (uchar)strtol(argv[i], (char **)0, 16);
-        switch (sc.cdb[0]) {        /* data-in length by opcode */
+        switch (sc.cdb[0]) {        /* data length + direction by opcode */
         case 0x28: sc.nbyte = (((sc.cdb[7]<<8)|sc.cdb[8]) * 512); break; /* READ(10) */
+        case 0x2a:                                 /* WRITE(10): send a test pattern */
+            sc.nbyte = (((sc.cdb[7]<<8)|sc.cdb[8]) * 512);
+            sc.reading = FALSE;
+            for (i = 0; i < (int)sc.nbyte && i < (int)sizeof buf; i++)
+                buf[i] = (unsigned char)(0xA0 + (i & 0x1f));
+            break;
         case 0x25: sc.nbyte = 8;          break;   /* READ CAPACITY */
         case 0x03: sc.nbyte = sc.cdb[4];  break;   /* REQUEST SENSE */
         default:   sc.nbyte = 36;         break;

@@ -46,7 +46,7 @@ echo "a4091.o: [$SZ]  a4091.c-compile-lines: ${CC:-?}"
 [ "${CC:-0}" = 0 ] && { echo "RESULT: STALE-BUILD (a4091.c not recompiled) -- NOT booting"; exit 3; }
 
 echo "### [6] cold boot the freshly-built kernel"
-$SH 'sync;sync;sync; nohup /usr/sbin/shutdown -y -g0 -i0 </dev/null >/dev/null 2>&1 &' >/dev/null 2>&1
+$SH 'sync;sync;sync; nohup /usr/sbin/shutdown -y -g0 -i0 </dev/null >/dev/null 2>&1 & echo HALTING' 2>&1 | grep -i HALTING
 down_wait; sleep 26
 coldboot
 if T=$(up_wait 330); then
