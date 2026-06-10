@@ -2,11 +2,11 @@
 # gsio-test.sh -- push+build the updated gsio tool on the box, then exercise the
 # generic a4091queue: INQUIRY regression, then READ(10) of blocks off the A4091 disk.
 set -u
-cd ~/Devel/Omat/Amiga/Amix/A4091 || exit 9
+cd . || exit 9
 export AMIX_PASS=REDACTED
 GRIM=../grimoire-amix
 SH="python3 $GRIM/tools/host-net/amixsh.py"
-SYNC="python3 tools/amixsync.py"
+SYNC="python3 ../amix-kerntools/tools/amixsync.py"
 clean(){ sed 's/\r$//' | grep -vE 'DONE_|amixsh|^======|echo D'; }
 
 echo "### push + build updated gsio"
