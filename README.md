@@ -64,20 +64,22 @@ which is what a real **Amiga A4000** needs, since the A4000 has no built-in SCSI
 | `hdf/`, `tmp/`, `build/`, ROMs | **git-ignored** — proprietary disk images, ROMs and scratch (see Legal). |
 
 The build harness, clean-gate, the FTP/telnet bridges and the golden build image live in the companion
-**[amix-kerntools](https://github.com/Jusii/amix-kerntools)** repo; the host network bridge lives in
-**[grimoire-amix](https://github.com/Jusii/grimoire-amix)**. Clone them as siblings of this repo.
+**[amix-kerntools](https://github.com/jusii/amix-kerntools)** repo; the host network bridge lives in
+**[grimoire-amix](https://github.com/jusii/grimoire-amix)**. Clone them as siblings of this repo.
 
 ---
 
 ## Build & run (emulation)
 
 You need a working Amix 2.1 install in **Amiberry**, the A4091 autoboot ROM, and a spare hardfile for
-the A4091 disk. (None of these are in this repo — see Legal.) The companion `amix-kerntools` and
-`grimoire-amix` repos provide the harness; `set AMIX_HOST`/`AMIX_USER`/`AMIX_PASS` for your box.
+the A4091 disk. (None of these are in this repo — see Legal.) The companion
+[amix-kerntools](https://github.com/jusii/amix-kerntools) and
+[grimoire-amix](https://github.com/jusii/grimoire-amix) repos provide the harness; clone them as
+siblings of this repo and `set AMIX_HOST`/`AMIX_USER`/`AMIX_PASS` for your box.
 
 1. **Reach the box.** Files go over FTP (Amix is NFSv2-only):
-   `../amix-kerntools/tools/amixsync.py push <file>`. Commands go over scripted telnet:
-   `../grimoire-amix/tools/host-net/amixsh.py '<cmd>'`.
+   `../amix-kerntools/tools/amixsync.py push <file>` (the path is the sibling clone). Commands go over
+   scripted telnet: `../grimoire-amix/tools/host-net/amixsh.py '<cmd>'`.
 2. **Install the driver + patch** into your Amix source tree:
    - Push the driver as the `alien` source:
      `amixsync.py push src/a4091-wr.c /usr/sys/amiga/alien/a4091.c`
