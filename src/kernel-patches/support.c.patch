@@ -7,10 +7,10 @@ on ECS/OCS A3000-class machines. This lets one kernel boot both an A3000 (own
 SCSI) and an A4000 (no built-in SCSI; root on the A4091).
 
 Apply against a stock Amix 2.1 source tree:
-    cd /usr/sys && patch -p1 < support.c.patch   # target: amiga/kernel/support.c
+    cd /usr/sys && patch -p0 < support.c.patch       # target: amiga/kernel/support.c
 
---- a/amiga/kernel/support.c
-+++ b/amiga/kernel/support.c
+--- amiga/kernel/support.c.orig	2026-06-24 13:06:37.503297920 +0300
++++ amiga/kernel/support.c	2026-06-24 13:06:37.506131770 +0300
 @@ -302,9 +302,39 @@
  {
  	register int i;
