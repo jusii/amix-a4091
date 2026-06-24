@@ -19,16 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-Scope. This license covers the original work in this repository authored by
-Jussi Alanärä: the A4091 driver sources (src/*.c), the host-side tooling
-(tools/*), the SCSI SCRIPTS sources (reference/scripts/*), the kernel-patch
-diffs (src/kernel-patches/*.patch) and the documentation.
-
-The kernel-patch diffs are applied against Amiga UNIX (Amix), which is
-proprietary Commodore/AT&T software and is NOT included or licensed here; you
-must supply your own legally-obtained Amix. The A4091 autoboot ROM and the
-ncr53cxxx SCRIPTS assembler come from the open-source a4091-software project
-and carry their own licenses. See README.md ("Legal").
