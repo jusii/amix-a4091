@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 /* findcfg.c -- scan /dev/kmem for the bootinfo ConfigDev table by locating the
  * known board base addresses (A2065 @0x00E90000, A4091 @0x40000000) as
  * longwords.  Robust against kernel-symbol address drift after a relink.

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
 """Parse an Amiga Rigid Disk Block (RDB) from a raw disk image / HDF.
 Lists partitions: name, flags (bootable), bootpri, dostype, LowCyl..HighCyl,
 byte offset + size, and the kernel's scsicard signature if it looks like a

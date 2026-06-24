@@ -1,0 +1,56 @@
+A3000-vs-A4000 SCSI auto-detection for the Amix kernel.
+
+Replaces the phantom-A3000 heuristic in autocon() (which hardcoded the internal
+WD33C93 at 0xDD0000 whenever RAM > 7 MB) with a chipset gate + WD33C93 probe:
+read VPOSR to skip the probe on AGA/A4000, and write/readback-probe the WD33C93
+on ECS/OCS A3000-class machines. This lets one kernel boot both an A3000 (own
+SCSI) and an A4000 (no built-in SCSI; root on the A4091).
+
+Apply against a stock Amix 2.1 source tree:
+    cd /usr/sys && patch -p1 < support.c.patch   # target: amiga/kernel/support.c
+
+--- a/amiga/kernel/support.c
++++ b/amiga/kernel/support.c
+@@ -302,9 +302,39 @@
+ {
+ 	register int i;
+ 
+-	if (index==0 && end > (char *)0x07000000 && (pc==0x0202F003)) {
+-		*bp = 0xdd0000;
+-		return 1;
++	/*
++	 * The A3000 internal SCSI (Commodore DMAC + WD33C93 @ 0xDD0000) is not
++	 * an AutoConfig board, so it never appears in bootinfo.autocon[].  Auto-
++	 * detect it instead of assuming it from RAM size.  An A4000 (AGA) has
++	 * none -- and we must NOT touch 0xDD0000 there -- so gate the probe on
++	 * the chipset: only A3000-class (ECS/OCS) machines have it.  VPOSR bits
++	 * 8..14 (mask LOF): AGA Alice is >= 0x22, ECS/OCS Agnus is < 0x22.
++	 */
++	if (index==0 && (pc==0x0202F003)) {
++		int a3kscsi = 0;
++		unsigned short vposr = *(volatile unsigned short *)0xDFF004;
++
++		if ((((int)vposr >> 8) & 0x7F) < 0x22) {	/* A3000-class, not AGA/A4000 */
++			/* write/readback the WD33C93 Timeout-Period register via its
++			 * indirect SASR/SCMD ports (harmless; chip is reset later). */
++			volatile unsigned char *sasr = (unsigned char *)0xDD0041;
++			volatile unsigned char *scmd = (unsigned char *)0xDD0043;
++
++			*sasr = 0x02; *scmd = 0x55;
++			*sasr = 0x02;
++			if (*scmd == 0x55) {
++				*sasr = 0x02; *scmd = 0xAA;
++				*sasr = 0x02;
++				if (*scmd == 0xAA)
++					a3kscsi = 1;
++			}
++		}
++		if (a3kscsi) {
++			*bp = 0xdd0000;
++			return 1;
++		}
++		/* absent: fall through; the table search cannot match the synthetic
++		 * 0x0202F003, so autocon returns 0 and sd.c never registers it. */
+ 	}
+ 
+ 	/*

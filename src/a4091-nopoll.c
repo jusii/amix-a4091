@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 /*
  * a4091.c -- Commodore A4091 (Zorro III / NCR 53C710) SCSI host adapter for Amix.
  *

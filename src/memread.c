@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 /*
  * memread.c -- read N bytes of physical memory via /dev/mem and print hex.
  * Used to characterize the A3000 SCSI WD33C93 region at 0xDD0000 (present vs

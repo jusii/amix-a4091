@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 /* cc-smoke.c -- smoke-test the native Amix build loop and report the C ABI
  * we will be writing the 53C710 driver against. Build natively on the box:
  *     cc -o cc-smoke cc-smoke.c

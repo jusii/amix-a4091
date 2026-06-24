@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 /*
  * a4091-data.c -- bisection step 2: init-only PLUS the SCRIPTS data (inq_script[]
  * .data array, siop_ds struct, buffers) but NO a4091cmd transaction code.

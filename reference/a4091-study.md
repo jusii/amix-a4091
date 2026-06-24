@@ -161,7 +161,7 @@ All nine offsets in `src/a4091.c:35-43` are **CORRECT**. Each verified against `
 
 ---
 
-## Concrete fixes / additions for `./src/a4091.c`
+## Concrete fixes / additions for `src/a4091.c`
 
 Nothing is broken, but these will save you pain in the next phase:
 
@@ -188,7 +188,7 @@ Nothing is broken, but these will save you pain in the next phase:
 
 6. **Before driving anything, burst must be disabled on the A4091**: `sc_ctest7 = SIOP_CTEST7_CDIS` (0x80) — `attach.c:630`, `siopreg.h:557`. And A4091 (Zorro III) uses `sc_dcntl = 0` (NOT `SIOP_DCNTL_EA`, which is A4000T-only) — `attach.c:638-639`.
 
-7. **Reference files you'll actually need next** (not siop2.c): the 710 logic is in `./reference/a4091-software/siop.c` (NetBSD 710 driver, `siopreset`/`siop_start`/`siopintr`), `siop_script.ss` (the 710 SCRIPTS, not siop2_script.ss), and `ncr7xx.c` (`get_ncrreg*`/`set_ncrreg*` are your portable access-primitive template). Board offsets: register file at board+`A4091_OFFSET_REGISTERS`=0x00800000 (`a4091.h:19`), confirming your `SIOP_OFF`.
+7. **Reference files you'll actually need next** (not siop2.c): the 710 logic is in `reference/a4091-software/siop.c` (NetBSD 710 driver, `siopreset`/`siop_start`/`siopintr`), `siop_script.ss` (the 710 SCRIPTS, not siop2_script.ss), and `ncr7xx.c` (`get_ncrreg*`/`set_ncrreg*` are your portable access-primitive template). Board offsets: register file at board+`A4091_OFFSET_REGISTERS`=0x00800000 (`a4091.h:19`), confirming your `SIOP_OFF`.
 
 
 # ===== INIT_SEQUENCE =====
@@ -578,7 +578,7 @@ Scope note up front (since your target is **Amix, not AmigaOS**): this whole ref
 - NDK includes auto-located at `$(dirname gcc)/../m68k-amigaos/ndk-include` (`Makefile:94`); override with `NDK_PATH=`.
 - For the ADF/disk and the `lha` dist archive: `lha`, and the `disk/` subdir tooling.
 
-**Commands** (run from `./reference/a4091-software`):
+**Commands** (run from `reference/a4091-software`):
 ```
 make                          # default DEVICE=A4091 -> builds everything (all: $(PROG) $(ROMS) $(TOOLS))
 make verbose                  # same, full compiler command echo (Makefile:151-158)
@@ -673,14 +673,14 @@ Your local checkout currently has **no tags** (`git describe` empty, `git tag` e
 - For a stable AmigaOS-side baseline (so the card behaves and you can A/B against Amix), flash the prebuilt **v42.37 `a4091.rom`**, or **`a4091_nodriver.rom`** if you want the card present but silent on the AmigaOS side. Use **`ncr7xx -t`** to validate your register-access plumbing and **`a4091d <unit>`** to read live 53C710 state (`sc_istat/sc_dstat/sc_sstat0/sc_sstat1/sc_intcode/sc_scriptspa`).
 
 Relevant absolute paths:
-- `./reference/a4091-software/Makefile`
-- `./reference/a4091-software/README.md`
-- `./reference/a4091-software/romtool.c`
-- `./reference/a4091-software/a4091d.c`
-- `./reference/a4091-software/bootmenu.c`
-- `./reference/a4091-software/battmem.c` and `battmem.h`
-- `./reference/a4091-software/attach.c` (DIP/host-id readers ~393-477; switch write ~359)
-- `./reference/a4091-software/device.c` (mount_drives 407-447)
-- `./reference/a4091-software/scsiconf.c` (scsi_probe_bus 380/449/481)
-- `./reference/a4091-software/a4091.h` (HW offsets 17-21)
+- `reference/a4091-software/Makefile`
+- `reference/a4091-software/README.md`
+- `reference/a4091-software/romtool.c`
+- `reference/a4091-software/a4091d.c`
+- `reference/a4091-software/bootmenu.c`
+- `reference/a4091-software/battmem.c` and `battmem.h`
+- `reference/a4091-software/attach.c` (DIP/host-id readers ~393-477; switch write ~359)
+- `reference/a4091-software/device.c` (mount_drives 407-447)
+- `reference/a4091-software/scsiconf.c` (scsi_probe_bus 380/449/481)
+- `reference/a4091-software/a4091.h` (HW offsets 17-21)
 - Releases: `https://github.com/A4091/a4091-software/releases` (latest v42.37, 2026-04-24).

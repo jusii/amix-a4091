@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 /* valscan.c -- scan /dev/kmem for a 32-bit value; dump 40 bytes of context.
  * Usage: valscan <hexvalue> [hexstart hexend]
  */

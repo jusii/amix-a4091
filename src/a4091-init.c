@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 /*
  * a4091-init.c -- incremental step toward real SCSI: detection + 53C710
  * soft-reset/init + register write-path self-test.  NO SCRIPTS yet.

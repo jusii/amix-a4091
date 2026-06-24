@@ -1,4 +1,5 @@
 #!/bin/sh
+# SPDX-License-Identifier: MIT
 # measure-corruption.sh  (runs ON the Amix box)
 #
 # Measures the RATE of the intermittent ld kernel-image corruption (NOTES s18).

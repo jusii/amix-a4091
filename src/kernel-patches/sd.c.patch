@@ -1,0 +1,51 @@
+A4091/A4092/A4770 SCSI registration for the Amix kernel SCSI selector.
+
+Adds the three Commodore/SCSI.ME 53C710 product IDs to scsicard[] (all routed
+to a4091queue), declares a4091queue(), and adds the sdcardbase() helper so an
+A4091 and an A4092/A4770 can be driven at the same time.
+
+Apply against a stock Amix 2.1 source tree:
+    cd /usr/sys && patch -p1 < sd.c.patch        # target: amiga/alien/sd.c
+
+--- a/amiga/alien/sd.c
++++ b/amiga/alien/sd.c
+@@ -12,7 +12,7 @@
+ #include	"sd.h"
+ 
+ 
+-extern bool a3091queue(), a2090queue(), a2091queue();
++extern bool a3091queue(), a2090queue(), a2091queue(), a4091queue();
+ 
+ static void
+ 	init( ),
+@@ -29,6 +29,9 @@
+ 	0x0202F003, &a3091queue, "A3000 Internal SCSI",
+ 	0x02020001, &a2090queue, "A2090 SCSI",
+ 	0x02020003, &a2091queue, "A2091 SCSI",
++	0x02020054, &a4091queue, "A4091 SCSI",
++	0xc0de0001, &a4091queue, "A4092 SCSI",	/* SCSI.ME A4092: same 53C710 core, same queue fn */
++	0xc0de0002, &a4091queue, "A4770 SCSI",	/* SCSI.ME A4770: A4092 sibling, same RTL/53C710   */
+ };
+ 
+ struct queue {
+@@ -69,6 +72,20 @@
+ }
+ 
+ 
++/*
++ * Physical AutoConfig base address init()/insert() recorded for this card.
++ * The a4091 driver maps each board's 53C710 window from this, so an A4091 and
++ * an A4092/A4770 (each routed to a4091queue) can be driven at the same time.
++ */
++char *
++sdcardbase( card)
++uint	card;
++{
++
++	return queue[card].a;
++}
++
++
+ static void
+ init( )
+ {

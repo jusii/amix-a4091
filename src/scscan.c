@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 /* scscan.c -- find the live sd.c scsicard[] and queue[] in kernel memory by
  * content (robust against symbol address drift). Prints the rows.
  * Usage: scscan [hexstart hexend]

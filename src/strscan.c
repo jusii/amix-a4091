@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 /* strscan.c -- search kernel memory (/dev/kmem) for an ASCII string.
  * Usage: strscan "needle" [hexstart hexend]
  */

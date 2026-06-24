@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 /*
  * a4091.c -- Commodore A4091 (Zorro III / NCR 53C710) SCSI host adapter for Amix.
  *
@@ -69,13 +70,24 @@
 
 #define	HOST_ID		7
 
-extern int	autocon();
 extern caddr_t	sptalloc();
 extern int	printf();
+extern char	*sdcardbase();		/* sd.c: phys base recorded for a card */
 
-static volatile uchar	*acfg;		/* board base page (AutoConfig regs) */
-static volatile uchar	*siop;		/* 53C710 register block (read base) */
-static long		board_phys;
+/*
+ * Per-card register mappings, indexed by the sd-layer card number (cp->card).
+ * a4091map() maps each board's two sub-regions once and caches them here, then
+ * points the current-card view (acfg/siop/board_phys) at the requested card --
+ * so an A4091 and an A4092/A4770 can be driven at the same time.  The RD/WR
+ * macros and the SCRIPTS launch all work through the current-card view.
+ */
+static volatile uchar	*acfg_tbl[SDCARDS];	/* board base page per card       */
+static volatile uchar	*siop_tbl[SDCARDS];	/* 53C710 register block per card */
+static long		phys_tbl[SDCARDS];	/* board phys base per card       */
+
+static volatile uchar	*acfg;		/* current card: board base page (AutoConfig regs) */
+static volatile uchar	*siop;		/* current card: 53C710 register block (read base)  */
+static long		board_phys;	/* current card: board phys base                    */
 
 /* register accessors -- reads at +0, writes at +WRSHADOW; 8/32-bit only */
 #define	RD8(r)		(siop[(r)])
@@ -143,26 +155,40 @@ ulong	a4091_dsps;
 uchar	a4091_rc, a4091_istat, a4091_dstat, a4091_stat;
 
 /*
- * Map the two safe A4091 sub-regions into kernel VA.  0 on success, errno else.
+ * Map one card's two safe sub-regions (AutoConfig page + 53C710 window) into
+ * kernel VA and select it as the current card.  Each card is mapped once and
+ * cached in the per-card tables; the base comes from sd.c (sdcardbase), which
+ * recorded what autocon returned for that board -- so this is product-agnostic
+ * (A4091 / A4092 / A4770 all map by whatever base the sd layer assigned).
+ * 0 on success, errno else.
  */
 static int
-a4091map()
+a4091map( card)
+int	card;
 {
-	long	base, size;
+	long	base;
 
-	if (siop)
-		return 0;
-	unless (autocon( A4091_PROD, 0, &base, &size)) {
-		base = 0x40000000;		/* known A4091 Zorro III phys base */
-		size = 0x01000000;
+	if (card < 0 || card >= SDCARDS)
+		return ENXIO;
+
+	if (siop_tbl[card] == 0) {		/* first request for this card: map it */
+		base = (long)sdcardbase( card);
+		if (base == 0)
+			base = 0x40000000;	/* last-resort guard (A4091 phys base) */
+		acfg_tbl[card] = (volatile uchar *)sptalloc( 1, PG_V, phystopfn( (paddr_t)base), 0);
+		siop_tbl[card] = (volatile uchar *)sptalloc( 1, PG_V, phystopfn( (paddr_t)base + SIOP_OFF), 0);
+		if (acfg_tbl[card] == 0 || siop_tbl[card] == 0) {
+			acfg_tbl[card] = 0;
+			siop_tbl[card] = 0;
+			return ENOMEM;
+		}
+		phys_tbl[card] = base;
 	}
-	board_phys = base;
-	acfg = (volatile uchar *)sptalloc( 1, PG_V, phystopfn( (paddr_t)base), 0);
-	siop = (volatile uchar *)sptalloc( 1, PG_V, phystopfn( (paddr_t)base + SIOP_OFF), 0);
-	if (acfg == 0 || siop == 0) {
-		siop = 0;
-		return ENOMEM;
-	}
+
+	/* select this card as current for the RD/WR macros + SCRIPTS launch */
+	acfg = acfg_tbl[card];
+	siop = siop_tbl[card];
+	board_phys = phys_tbl[card];
 	return 0;
 }
 
@@ -211,7 +237,7 @@ struct sdcom	*cp;
 	uchar	istat, dstat, sstat0;
 	int	e, i, rc, target, cmdlen;
 
-	if (e = a4091map()) {
+	if (e = a4091map( cp->card)) {
 		cp->status = 0xff; cp->okay = FALSE;
 		(*cp->intr)( cp);
 		return TRUE;

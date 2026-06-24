@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 /* dumpcfg.c -- dump the kernel's bootinfo.autocon[] AutoConfig table from
  * /dev/kmem, to see every board the AmigaOS bootstrap handed to the Amix
  * kernel -- crucially including any Zorro III board (e.g. the A4091), whose

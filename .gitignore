@@ -16,3 +16,12 @@ core
 *.swp
 *~
 .DS_Store
+
+# Local-only working docs and tooling config — kept on disk, not part of the
+# public release (lab notebook, handoffs, Claude Code project config).
+NOTES.md
+PROPOSAL.md
+GRIMOIRE-HANDOFF.md
+NEXT-PROJECT-HANDOFF.md
+CLAUDE.md
+.claude/

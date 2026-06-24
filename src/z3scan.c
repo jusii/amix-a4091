@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 /* z3scan.c -- map the A4091's Zorro III window and find its populated regions
  * (autoboot ROM, 53C710 registers) by scanning for non-0xFF/0x00 content and
  * ASCII strings.  Block-based with per-block SIGBUS protection so it is both

@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 /* gsio.c -- submit a raw SCSI command to an Amix host adapter via the GSIO
  * passthrough ( /dev/scsi, cdevsw 11, scsi.c:gsioctl ).  Sends INQUIRY by
  * default.  Reusable for the A4091 once a4091queue is registered (just point

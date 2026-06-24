@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 /* z3probe.c -- can Amix userspace reach the A4091's Zorro III window at all?
  *
  * The A4091 AutoConfigured at physical 0x40000000 (16 MB), per bootinfo.

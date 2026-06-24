@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 /* kmemdump.c -- hex-dump kernel memory via /dev/kmem.
  * Usage: kmemdump <hexaddr> <declen>
  */

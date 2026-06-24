@@ -1,15 +1,19 @@
 #!/bin/bash
+# SPDX-License-Identifier: MIT
 # bisect-boot.sh <src-file>
 # Push a bisection candidate as a4091.c, clean-rebuild + install, then cold-boot
 # and gsio-test it.  Transport-safe (no nested sh -c), with a freshness gate so a
 # stale kernel cannot masquerade as a pass.  Prints a single RESULT: line.
+#
+# Requires sibling repos amix-kerntools and grimoire-amix; set AMIX_HOST/USER/PASS
+# for your Amix box (override GRIM/KERNTOOLS if the siblings live elsewhere).
 set -u
 SRC="$1"
-cd . || exit 9
-export AMIX_PASS=REDACTED
-GRIM=../grimoire-amix
+cd "$(dirname "$0")/.." || exit 9          # repo root
+: "${AMIX_PASS:?set AMIX_PASS to your Amix box password}"
+GRIM="${GRIM:-../grimoire-amix}"
 SH="python3 $GRIM/tools/host-net/amixsh.py"
-HOST=AMIX_HOST
+HOST="${AMIX_HOST:?set AMIX_HOST to your Amix box IP/hostname}"
 UAE="$PWD/amix-a4091.uae"
 
 tn(){ timeout 2 bash -c "</dev/tcp/$HOST/23" 2>/dev/null; }
@@ -23,7 +27,7 @@ T=$(up_wait 300) || { echo "RESULT: FATAL box wont come up at all"; exit 1; }
 echo "box up (${T}s)"
 
 echo "### [2] push $SRC -> a4091.c"
-python3 ../amix-kerntools/tools/amixsync.py push "$SRC" /usr/sys/amiga/alien/a4091.c 2>&1 | grep -i push
+python3 "${KERNTOOLS:-../amix-kerntools}/tools/amixsync.py" push "$SRC" /usr/sys/amiga/alien/a4091.c 2>&1 | grep -i push
 
 echo "### [3] clean rebuild + install (background; trailing echo avoids '& ;' syntax error from amixsh sentinel)"
 $SH 'cd /usr/sys/amiga/alien && rm -f a4091.o exp; cd /usr/sys && rm -f relocunix unix amiga/exp amiga/config/unix.o; nohup make install > /tmp/inst.log 2>&1 & echo BG_PID_$!' 2>&1 | grep -i BG_PID_

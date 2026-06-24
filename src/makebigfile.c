@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 /*
  * makebigfile.c -- probe whether the intermittent kernel-image corruption
  * (NOTES s18) is triggered by ld's I/O *pattern* (small buffered writes +
